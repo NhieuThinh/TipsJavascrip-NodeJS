@@ -1,13 +1,17 @@
 const express = require('express')
 require('dotenv').config()
-const app = express()
 const morgan = require('morgan')
 const helmet = require('helmet')
+const app = express()
 
 
 //init middleware
 app.use(morgan('combined'))
 app.use(helmet())
+app.use(express.json())
+app.use(express.urlencoded({
+    extended:true
+}))
 
 
 //init db
@@ -19,8 +23,6 @@ require('./dbs/init.mongodb')
 
 
 //routes
-app.get("/",(req, res, next)=>{
-    res.status(200).json({message:'hello 500 ae'})
-})
+app.use('/', require('./routes'))
 
 module.exports = app
