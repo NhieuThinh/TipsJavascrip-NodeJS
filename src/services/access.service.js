@@ -6,6 +6,8 @@ const crypto = require('crypto');
 const keyTokenService = require("./keyToken.service");
 const { createTokenPair } = require("../auth/authUtls");
 const { getInfoData } = require("../utils");
+const { BadRequestError, ConflictRequestError, AuthFailureError } = require("../core/error.response");
+const { findByEmail } = require("./shop.service");
 
 const RoleShop={
     SHOP: 'SHOP',
@@ -15,15 +17,47 @@ const RoleShop={
 }
 
 class AccessService{
+    /*
+        1- check email in dbs
+        2- match password
+        3- create AT and RT sand save
+        4- generate Tokens
+        5- get data return login
+    */
+    static login = async({email, password, refreshToken = null}) =>{
+        //1.
+        const foundShop = await findByEmail({email})
+        if(!foundShop) throw new BadRequestError('Shop not registered!')
+
+        //2.
+        const matchPassword = await bcrypt.compare(password, foundShop.password)
+        if(!matchPassword) throw new AuthFailureError('Authentication Error!')
+        
+        //3.
+        const privateKey  =crypto.randomBytes(64).toString('hex')
+        const publicKey = crypto.randomBytes(64).toString('hex')
+
+        //4.
+        const tokens = await createTokenPair({userId:foundShop._id, email}, publicKey, privateKey)
+        await keyTokenService.createKeyToken({
+            userId:foundShop._id,refreshToken: tokens.refreshToken, publicKey, privateKey
+        })
+        return {
+            shop:getInfoData({fields:['_id', 'name', 'email'], object:foundShop}),
+            tokens
+        }
+    }
+
     static signUp =async({name, email, password})=> {
-        try {
+        // try {
             const holderShop  =await shopModel.findOne({email}).lean()
 
             if(holderShop){
-                return {
-                    code:'xxxx',
-                    message: 'Shop already registerd'
-                }
+                // return {
+                //     code:'xxxx',
+                //     message: 'Shop already registerd'
+                // }
+                throw new BadRequestError('Error Shop already registerd')
             }
             const passwordHash = await bcrypt.hash(password, 10)
 
@@ -56,6 +90,8 @@ class AccessService{
                         code:'xxx',
                         message:'publicKeyString Error'
                     }
+                    // throw new BadRequestError('Error: publicKeyString not existed')
+
                 }
 
                 //created token pair
@@ -75,15 +111,13 @@ class AccessService{
                 metadata:null
             }
 
-        } catch (error) {
-            return{
-
-                code:'xxx',
-                message:error,
-                status: 'error'
-            }
-
-        }
+        // } catch (error) {
+        //     return{
+        //         code:'xxx',
+        //         message:error,
+        //         status: 'error'
+        //     }
+        // }
     }
 
 
