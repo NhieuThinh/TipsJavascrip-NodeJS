@@ -4,10 +4,11 @@ const shopModel = require("../models/shop.model");
 const bcrypt = require('bcrypt')
 const crypto = require('crypto');
 const keyTokenService = require("./keyToken.service");
-const { createTokenPair } = require("../auth/authUtls");
+const { createTokenPair, verifyToken } = require("../auth/authUtls");
 const { getInfoData } = require("../utils");
-const { BadRequestError, ConflictRequestError, AuthFailureError } = require("../core/error.response");
+const { BadRequestError, AuthFailureError, ForbiddenError } = require("../core/error.response");
 const { findByEmail } = require("./shop.service");
+const KeyTokenModel = require("../models/keytoken.model");
 
 const RoleShop={
     SHOP: 'SHOP',
@@ -17,6 +18,57 @@ const RoleShop={
 }
 
 class AccessService{
+
+    /*
+    Check this token used?????
+    */ 
+    static handlerRefreshToken = async (refreshToken)=>{
+        // check coi RT co trong list da su dung khong
+        const foundToken = await keyTokenService.findByRefreshTokenUsed(refreshToken)
+        // neu co thi co van de, decode xem coi la thang nao
+        if(foundToken){
+            const {userId, email} = await verifyToken(refreshToken, foundToken.privateKey)
+            console.log({userId, email})
+            //co van de nen xoa luon bo token trong keytokenModel
+            await keyTokenService.deleteKeyById(userId)
+            throw new ForbiddenError('Something wrong happend with your account! Please login again')
+        }
+        // neu khong thi qua tot, tim xem coi no dang la RT cua thang nao
+        const holderToken = await keyTokenService.findByRefreshToken(refreshToken)
+        // neu van khong tim thay thi dua ra loi~
+        if(!holderToken){
+            throw new AuthFailureError('Shop not register -1!')
+        }
+
+        //neu tim thay thi verify token 
+        const {userId, email} = await verifyToken(refreshToken, holderToken.privateKey)
+        console.log('[2]--',{userId ,email})
+
+        //check email coi co khong
+        const foundShop = await findByEmail({email})
+        if(!foundShop){
+            throw new AuthFailureError('Shop not register -2!')
+        }
+        //tim thay shop thi tao cap token moi cho shop
+        const tokens = await createTokenPair({userId:foundShop._id, email}, holderToken.publicKey, holderToken.privateKey)
+
+        //update token cho shop
+        await KeyTokenModel.updateOne({ _id: holderToken._id }, {
+            $set: {
+              refreshToken: tokens.refreshToken
+            },
+            $addToSet: {
+              refreshTokensUsed: refreshToken
+            }
+          });
+
+        return {
+            user: {userId, email},
+            tokens
+        }
+
+
+    }
 
     static logout = async (keyStore)=>{
         const delKey = await keyTokenService.removeKeyById(keyStore._id)
