@@ -12,7 +12,7 @@ const productSchema = new Schema({
     product_price:{type:Number, required:true},
     product_quantity:{type:Number, required:true},
     product_type:{type:String, required:true, enum:['Electronics', 'Clothing', 'Furniture']},
-    product_shop:String, //{Types.Schema.ObjectId, ref:'User},
+    product_shop:{type:Schema.Types.ObjectId, ref:'Shop'},
     product_attributes:{type:Schema.Types.Mixed, required:true}
 },{
     collection:COLLECTION_NAME,
@@ -26,7 +26,7 @@ const clothingSchema = new Schema({
     material:String
 },{
     collection:'clothes',
-    timeseries:true
+    timestamps:true
 })
 
 // define product type: clothing
@@ -37,7 +37,7 @@ const electronicSchema = new Schema({
     color:String
 },{
     collection:'electronics',
-    timeseries:true
+    timestamps:true
 })
 
 module.exports = {

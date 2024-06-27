@@ -1,13 +1,13 @@
-@url_dev= http://localhost:3055/v1/api
+@url_dev= http://localhost:3056/v1/api
 
 
 ### signup
 POST {{url_dev}}/shop/signup
 Content-Type: application/json
-x-api-key:952624f0e3d617fd01e91c3d6f1f691feafa4785cbd4debd7a384172ab15cf838c452fe1cbb19c5655040da1641a12dde6942782a1c3b9bc6aa69c33be7493b4
+x-api-key:b3f67c44e44ae026c55c2cba302549b87005b5cbdc97579fd5023f08f80585bf078c264816ec58ad005bfad18f0752a9616e9a3e617f79b7a9faebccb3cf0ca3
 
 {
     "name":"Shop Teo",
-    "email":"shopteo02@gmail.com",
+    "email":"shopteo01@gmail.com",
     "password":"abc123"
 }

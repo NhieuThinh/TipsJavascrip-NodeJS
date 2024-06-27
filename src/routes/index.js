@@ -14,4 +14,6 @@ router.use('/v1/api', require('./access'))
 //     res.status(200).json({message:'hello 500 ae'})
 // })
 
+router.use('/v1/api', require('./product'))
+
 module.exports = router
