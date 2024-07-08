@@ -4,10 +4,23 @@ const { CREATED, SuccessResponse } = require("../core/success.response")
 const AccessService = require("../services/access.service")
 
 class AccessController{
+    //version 1
+    // handlerefreshtoken = async (req,res,next) =>{
+    //     new SuccessResponse({
+    //         message:'handle refreshtoken Successfully!',
+    //         metadata: await AccessService.handlerRefreshToken(req.body.refreshToken),
+    //     }).send(res)
+    // }
+
+    //version 2
     handlerefreshtoken = async (req,res,next) =>{
         new SuccessResponse({
-            message:'handle refreshtoken Successfully!',
-            metadata: await AccessService.handlerRefreshToken(req.body.refreshToken),
+            message:'Get token Successfully!',
+            metadata: await AccessService.handlerRefreshTokenV2({
+                refreshToken: req.refreshToken,
+                user: req.user,
+                keyStore:req.keyStore
+            }),
         }).send(res)
     }
 

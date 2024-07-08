@@ -9,6 +9,7 @@ const { getInfoData } = require("../utils");
 const { BadRequestError, AuthFailureError, ForbiddenError } = require("../core/error.response");
 const { findByEmail } = require("./shop.service");
 const KeyTokenModel = require("../models/keytoken.model");
+const { keys } = require("lodash");
 
 const RoleShop={
     SHOP: 'SHOP',
@@ -21,7 +22,49 @@ class AccessService{
 
     /*
     Check this token used?????
-    */ 
+    */
+
+    static handlerRefreshTokenV2 = async ({keyStore, user, refreshToken})=>{
+
+        const {userId, email} = user
+
+        if(keyStore.refreshTokensUsed.includes(refreshToken)){
+            await keyTokenService.deleteKeyById(userId)
+            throw new ForbiddenError('Something wrong happend with your account! Please login again')
+        }
+
+        //check email coi co khong
+        const foundShop = await findByEmail({email})
+        if(!foundShop){
+            throw new AuthFailureError('Shop not register -2!')
+        }
+
+        //tim thay shop thi tao cap token moi cho shop
+        const tokens = await createTokenPair({userId:foundShop._id, email}, keyStore.publicKey, keyStore.privateKey)
+
+
+        //update token cho shop
+        console.log(keyStore._id)
+        // await keyStore.update({
+        //     $set: {
+        //       refreshToken: tokens.refreshToken
+        //     },
+        //     $addToSet: {
+        //       refreshTokensUsed: refreshToken
+        //     }
+        //   });
+
+        keyStore.refreshToken = tokens.refreshToken;
+        keyStore.refreshTokensUsed.addToSet(refreshToken);
+        await keyStore.save();
+
+        return {
+            user,
+            tokens
+        }
+    }
+
+
     static handlerRefreshToken = async (refreshToken)=>{
         // check coi RT co trong list da su dung khong
         const foundToken = await keyTokenService.findByRefreshTokenUsed(refreshToken)
